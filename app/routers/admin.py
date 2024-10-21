@@ -1,4 +1,6 @@
-from fastapi import status, HTTPException, Depends, APIRouter
+from fastapi import status, Depends, APIRouter
+from fastapi.responses import JSONResponse
+
 from .. import models, schemas, utils
 from ..database import get_db
 from sqlalchemy.orm import Session
@@ -14,7 +16,10 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
         existAdmin = db.query(models.Admin).filter(models.Admin.email == admin.email).first()
 
         if existAdmin:
-            raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail=f"Already exists {admin.email}")
+            return JSONResponse(
+                status_code=status.HTTP_208_ALREADY_REPORTED,
+                content={"success": False, "message": f"Admin with email {admin.email} already exists."}
+            )
 
         hashedPassword = utils.hash(admin.password)
         admin.password = hashedPassword
@@ -25,13 +30,22 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
         
         return new_admin
     except Exception as error:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error))
+        return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"success": False, "message": "Something went wrong!"}
+            )
 
-@router.get("/{id}", response_model=schemas.AdminOut)
+@router.get("/{id}")
 def get_admin(id: int, db: Session = Depends(get_db)):
     user = db.query(models.Admin).filter(models.Admin.id == id).first()
     
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {id} does not exist")
-    
-    return user
+        return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"success": False, "message": f"User with id {id} does not exist"}
+            )
+    # return ResponseSuccess(data=user.id)
+    return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"success": True, "data": user.email}
+            )
