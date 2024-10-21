@@ -23,3 +23,5 @@ class AdminLogin(BaseModel):
     email: EmailStr
     password: str
 
+class TokenData(BaseModel):
+    id: Optional[str] = None
