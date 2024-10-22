@@ -1,4 +1,6 @@
 from fastapi import status, Depends, APIRouter
+
+from app import oauth2
 from ..custom_responses import ResponseSuccess, ResponseFailed
 from .. import models, schemas, utils
 from ..database import get_db
@@ -39,17 +41,12 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
         )
 
 
-@router.get("/{id}")
-def get_admin(id: int, db: Session = Depends(get_db)):
+@router.get("/")
+def get_profile(current_user: int = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
     try:
         adminFetch = db.query(models.Admin).filter(
-            models.Admin.id == id).first()
+            models.Admin.id == current_user.id).first()
 
-        if not adminFetch:
-            return ResponseFailed(
-                status_code=status.HTTP_404_NOT_FOUND,
-                message=f"Admin with id {id} does not exist"
-            )
         data = {
             "id": adminFetch.id,
             "email": adminFetch.email,

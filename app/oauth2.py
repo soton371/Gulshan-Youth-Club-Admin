@@ -2,9 +2,10 @@ import jwt
 from datetime import datetime, timedelta
 from . import schemas, database, models
 from sqlalchemy.orm import Session
-from fastapi import Depends, status, HTTPException
+from fastapi import Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from .config import settings
+from .custom_responses import ResponseFailed
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -26,26 +27,31 @@ def create_access_token(data: dict):
 def verify_access_token(token: str, credential_exception):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        id = str(payload.get('user_id'))
+        userId = str(payload.get('user_id'))
 
 
-        if id is None:
-            raise credential_exception
+        if userId is None:
+            return credential_exception
 
-        token_data = schemas.TokenData(id=id)
+        token_data = schemas.TokenData(id=userId)
+        return token_data
     except Exception as e:
-        print(f"error: {e}")
-        raise credential_exception
+        print(f"error in verify_access_token: {e}")
+        return credential_exception
     
-    return token_data
+    
 
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
-    credential_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Could not validate credential", headers={"WWW-Authenticate": "Bearer"})
+    try:
+        credential_exception = ResponseFailed(status_code=status.HTTP_401_UNAUTHORIZED, message="Could not validate credential")
 
-    token = verify_access_token(token, credential_exception)
+        tokenData = verify_access_token(token, credential_exception)
+        admin=db.query(models.Admin).filter(models.Admin.id == tokenData.id).first()
 
-    admin=db.query(models.Admin).filter(models.Admin.id == token.id).first()
-
-    return admin
+        return admin
+    except Exception as error:
+        print(f'error in get_current_user: {error}')
+        return ResponseFailed(status_code=status.HTTP_401_UNAUTHORIZED, message="Could not validate credential")
+    
