@@ -13,17 +13,17 @@ router = APIRouter(
 
 
 @router.post("/")
-async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)):
+async def create_admin(admin: models.AdminCreate, db: Session = Depends(get_db)):
     try:
-        existAdmin = db.query(models.Admin).filter(
-            models.Admin.email == admin.email).first()
+        existAdmin = db.query(schemas.Admin).filter(
+            schemas.Admin.email == admin.email).first()
 
         if existAdmin:
             return ResponseFailed(status_code=status.HTTP_208_ALREADY_REPORTED, message=f"Admin with email {admin.email} already exists.")
 
-        hashedPassword = utils.hash(admin.password)
+        hashedPassword = utils.hashedPassword(admin.password)
         admin.password = hashedPassword
-        new_admin = models.Admin(**admin.model_dump())
+        new_admin = schemas.Admin(**admin.model_dump())
         db.add(new_admin)
         db.commit()
         db.refresh(new_admin)
@@ -37,15 +37,15 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
         print(f"error in create_admin: {error}")
         return ResponseFailed(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="Something went wrong!"
+            message="Something went wrong"
         )
 
 
 @router.get("/")
 def get_profile(current_user: int = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
     try:
-        adminFetch = db.query(models.Admin).filter(
-            models.Admin.id == current_user.id).first()
+        adminFetch = db.query(schemas.Admin).filter(
+            schemas.Admin.id == current_user.id).first()
 
         data = {
             "id": adminFetch.id,
@@ -60,5 +60,5 @@ def get_profile(current_user: int = Depends(oauth2.get_current_user), db: Sessio
         print(f"error in get_admin: {error}")
         return ResponseFailed(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="Something went wrong!"
+            message="Something went wrong"
         )

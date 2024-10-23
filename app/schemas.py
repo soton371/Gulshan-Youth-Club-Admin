@@ -1,27 +1,15 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from datetime import datetime
-from pydantic.types import conint
 
 
-# for admin
-class AdminOut(BaseModel):
-    id: int
-    email: EmailStr
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
+from .database import Base
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.sql.expression import text
 
+class Admin(Base):
+    __tablename__ = "admin"
 
-class AdminCreate(BaseModel):
-    email: EmailStr
-    password: str
-        
-        
-class AdminLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class TokenData(BaseModel):
-    id: Optional[str] = None
+    id = Column(Integer, primary_key=True, nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))

@@ -9,12 +9,12 @@ def ResponseSuccess(status_code: int, data: any):
         }
     )
 
-def ResponseFailed(status_code: int, message: str):
+def ResponseFailed(status_code: int, message: any):
     return JSONResponse(
         status_code=status_code,
         content={
             "success": False,
-            "message": message
+            "message": str(message)
         }
     )
 
