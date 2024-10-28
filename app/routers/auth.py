@@ -33,14 +33,18 @@ def login(user_credentials: models.AdminLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Something went wrong")
 
 
-
 @router.post("/send-otp")
 def send_otp(payload: models.SendOtpData, db: Session = Depends(get_db)):
     try:
         # send otp & store in db
-        print('d')
+        otp = utils.generate_otp()
+        expiry = utils.otp_expiry_time()
+        otp_entry = schemas.OTP(email=payload.email,
+                                otp=otp, expiry_time=expiry)
+        db.add(otp_entry)
+        db.commit()
+        return ResponseSuccess(data="OTP sent to email")
     except Exception as error:
         print(f"error in send_otp: {error}")
         return ResponseFailed(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Something went wrong")
-    
